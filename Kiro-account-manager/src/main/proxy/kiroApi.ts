@@ -200,18 +200,26 @@ function modelTokens(value: string): string[] {
   return value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
 }
 
-function modelText(model: KiroModel): string {
-  return [model.modelId, model.modelName, model.description].filter(Boolean).join(' ')
-}
-
 function matchesRequestedModel(model: KiroModel, requestedModelId: string): boolean {
+  // 1. modelId 级精确匹配（去除符号后比较）
   const requestedKey = normalizeModelKey(requestedModelId)
-  const candidateKey = normalizeModelKey(modelText(model))
-  if (candidateKey === requestedKey || candidateKey.includes(requestedKey)) return true
+  const modelIdKey = normalizeModelKey(model.modelId)
+  if (modelIdKey === requestedKey || modelIdKey.includes(requestedKey)) return true
+  // 2. modelName 精确匹配
+  if (model.modelName && normalizeModelKey(model.modelName).includes(requestedKey)) return true
+  // 3. token 匹配（所有请求 token 必须在 modelId+modelName 中命中，不搜索 description 避免误匹配）
   const tokens = modelTokens(requestedModelId).filter(token => token !== 'latest' && token !== 'model')
   if (tokens.length === 0) return false
-  const candidateTokens = new Set(modelTokens(modelText(model)))
-  return tokens.every(token => candidateTokens.has(token))
+  const candidateTokens = new Set(modelTokens(`${model.modelId} ${model.modelName || ''}`))
+  // 必须全部 token 命中
+  if (!tokens.every(token => candidateTokens.has(token))) return false
+  // 防止模型家族冲突：如果请求包含 opus/sonnet/haiku，候选必须也包含对应的
+  const families = ['opus', 'sonnet', 'haiku']
+  for (const family of families) {
+    if (tokens.includes(family) && !candidateTokens.has(family)) return false
+    if (!tokens.includes(family) && candidateTokens.has(family)) return false
+  }
+  return true
 }
 
 function isCodeWhispererModelId(modelId: string): boolean {
@@ -848,6 +856,37 @@ export function buildKiroPayload(
     payload.additionalModelRequestFields = additionalModelRequestFields
   }
 
+  // 工具结果裁剪：payload 超过限制时，从最旧的历史 toolResult 开始截断内容
+  // Kiro API 限制约 400KB；保留 380KB 阈值给请求头和增量空间
+  const PAYLOAD_SIZE_LIMIT = 380 * 1024
+  const TOOL_RESULT_TRUNCATE_LENGTH = 2000
+  let initialPayloadSize = JSON.stringify(payload).length
+  if (initialPayloadSize > PAYLOAD_SIZE_LIMIT && payload.conversationState.history) {
+    const historyMessages = payload.conversationState.history
+    let truncatedCount = 0
+    for (const message of historyMessages) {
+      if (initialPayloadSize <= PAYLOAD_SIZE_LIMIT) break
+      const userToolResults = message.userInputMessage?.userInputMessageContext?.toolResults
+      if (!userToolResults) continue
+      for (const toolResult of userToolResults) {
+        if (initialPayloadSize <= PAYLOAD_SIZE_LIMIT) break
+        if (!toolResult.content) continue
+        for (const contentItem of toolResult.content) {
+          if (initialPayloadSize <= PAYLOAD_SIZE_LIMIT) break
+          if (contentItem.text && contentItem.text.length > TOOL_RESULT_TRUNCATE_LENGTH) {
+            const originalLen = contentItem.text.length
+            contentItem.text = `${contentItem.text.slice(0, TOOL_RESULT_TRUNCATE_LENGTH)}\n\n[Truncated by proxy: original ${originalLen} chars]`
+            truncatedCount++
+            initialPayloadSize = JSON.stringify(payload).length
+          }
+        }
+      }
+    }
+    if (truncatedCount > 0) {
+      console.log(`[KiroPayload] Truncated ${truncatedCount} large tool results to fit payload size limit (final size: ${initialPayloadSize} bytes)`)
+    }
+  }
+
   // 调试日志
   console.log(`[KiroPayload] Built payload (native history mode):`, {
     contentLength: finalContent.length,
@@ -856,7 +895,8 @@ export function buildKiroPayload(
     toolsCount: tools.length,
     toolResultsCount: toolResults.length,
     hasProfileArn: payload.profileArn !== undefined,
-    hasThinking: !!additionalModelRequestFields?.thinking
+    hasThinking: !!additionalModelRequestFields?.thinking,
+    payloadSize: initialPayloadSize
   })
 
   return payload
@@ -938,7 +978,7 @@ function throwIfAborted(signal?: AbortSignal): void {
 export async function callKiroApiStream(
   account: ProxyAccount,
   payload: KiroPayload,
-  onChunk: (text: string, toolUse?: KiroToolUse, isThinking?: boolean, reasoningSignature?: string) => void,
+  onChunk: (text: string, toolUse?: KiroToolUse, isThinking?: boolean, reasoningSignature?: string, redactedContent?: string) => void,
   onComplete: (usage: KiroUsage) => void,
   onError: (error: Error) => void,
   signal?: AbortSignal,
@@ -1086,7 +1126,7 @@ interface ToolUseState {
 // 解析 AWS Event Stream 二进制格式
 async function parseEventStream(
   body: ReadableStream<Uint8Array>,
-  onChunk: (text: string, toolUse?: KiroToolUse, isThinking?: boolean, reasoningSignature?: string) => void,
+  onChunk: (text: string, toolUse?: KiroToolUse, isThinking?: boolean, reasoningSignature?: string, redactedContent?: string) => void,
   onComplete: (usage: KiroUsage) => void,
   onError: (error: Error) => void,
   inputChars: number = 0,  // 输入字符长度，用于估算 input tokens
@@ -1384,18 +1424,21 @@ async function parseEventStream(
             }
             
             // 处理 reasoningContentEvent - Thinking 模式的推理内容
+            // Kiro ReasoningContentEvent 字段：[text, redactedContent, signature]
             if (eventType === 'reasoningContentEvent' || event.reasoningContentEvent) {
               const reasoning = event.reasoningContentEvent || event
-              // 推理内容可能包含 text 或 signature
               if (reasoning.text) {
-                // 传递 isThinking=true 标记这是思考内容
                 proxyLogger.info('Kiro', `Received reasoning content (isThinking=true): ${reasoning.text.slice(0, 50)}...`)
-                onChunk(reasoning.text, undefined, true, reasoning.signature)
+                onChunk(reasoning.text, undefined, true, reasoning.signature, undefined)
                 totalOutputChars += reasoning.text.length
-                // 累计 reasoning tokens（约 3 字符 = 1 token）
                 usage.reasoningTokens += Math.max(1, Math.round(reasoning.text.length / 3))
-              } else if (reasoning.signature) {
-                onChunk('', undefined, true, reasoning.signature)
+              } else if (reasoning.signature && !reasoning.redactedContent) {
+                onChunk('', undefined, true, reasoning.signature, undefined)
+              }
+              // 处理 redactedContent（重编辑的加密 thinking 内容）
+              if (reasoning.redactedContent) {
+                proxyLogger.info('Kiro', `Received redacted thinking content (len=${reasoning.redactedContent.length})`)
+                onChunk('', undefined, true, undefined, reasoning.redactedContent)
               }
               proxyLogger.debug('Kiro', 'reasoningContentEvent', JSON.stringify(reasoning).slice(0, 200))
             }
@@ -1543,22 +1586,24 @@ export async function callKiroApi(
   content: string
   toolUses: KiroToolUse[]
   usage: KiroUsage
-  reasoningContent?: { text: string; signature?: string }
+  reasoningContent?: { text?: string; signature?: string; redactedContent?: string }
 }> {
   return new Promise((resolve, reject) => {
     let content = ''
     let reasoningText = ''
     let reasoningSignature: string | undefined
+    let redactedContent = ''
     const toolUses: KiroToolUse[] = []
     let usage: KiroUsage = { inputTokens: 0, outputTokens: 0, credits: 0 }
 
     callKiroApiStream(
       account,
       payload,
-      (text, toolUse, isThinking, signature) => {
+      (text, toolUse, isThinking, signature, redacted) => {
         if (isThinking) {
-          reasoningText += text
-          reasoningSignature = signature || reasoningSignature
+          if (text) reasoningText += text
+          if (signature) reasoningSignature = signature
+          if (redacted) redactedContent += redacted
         } else {
           content += text
         }
@@ -1568,13 +1613,12 @@ export async function callKiroApi(
       },
       (u) => {
         usage = u
-        if (reasoningText) {
-          resolve({
-            content,
-            toolUses,
-            usage,
-            reasoningContent: reasoningSignature ? { text: reasoningText, signature: reasoningSignature } : { text: reasoningText }
-          })
+        if (reasoningText || redactedContent) {
+          const rc: { text?: string; signature?: string; redactedContent?: string } = {}
+          if (reasoningText) rc.text = reasoningText
+          if (reasoningSignature) rc.signature = reasoningSignature
+          if (redactedContent) rc.redactedContent = redactedContent
+          resolve({ content, toolUses, usage, reasoningContent: rc })
           return
         }
         resolve({ content, toolUses, usage })

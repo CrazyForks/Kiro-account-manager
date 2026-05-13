@@ -271,6 +271,24 @@ The project is configured with GitHub Actions workflow for auto building all pla
 
 ## 📋 Changelog
 
+
+### v1.6.3 (2026-5-14)
+
+#### API Proxy
+- **Fixed**: Claude Code `thinking` parameter with numeric `budget_tokens` no longer causes `400 REQUEST_BODY_INVALID` — Kiro API only accepts `"adaptive"` or `"disabled"`, so all thinking requests are now mapped to `{ type: "enabled", budget_tokens: "adaptive" }`
+- **Fixed**: CodeWhisperer model ID resolution no longer incorrectly maps `claude-opus-4.7` to a Sonnet model — matching now uses model family exclusion (opus/sonnet/haiku) to prevent cross-family mismatches
+- **Fixed**: Model matching no longer searches description text, reducing false positives for new models not yet in `ListAvailableModels`
+- **Changed**: AmazonQ CLI endpoint origin updated to `SM_AI_STUDIO_IDE`
+
+#### Claude Code Compatibility (Based on Source Code Analysis)
+- **Fixed**: Thinking parameter mapped to Kiro's enum-compliant format `{ type: "adaptive" }` (was `{ type: "enabled", budget_tokens: "adaptive" }`) — matches Kiro schema enum `["adaptive", "disabled"]`
+- **New**: `redacted_thinking` block support — Kiro's `ReasoningContentEvent.redactedContent` field now decoded and converted to Anthropic `redacted_thinking` content blocks (both request input and response output)
+- **New**: `effort` parameter passthrough — Claude Code 4.6+ `output_config.effort` (low/medium/high/max) now forwarded to Kiro `additionalModelRequestFields.effort`
+- **New**: `context_management` beta passthrough — API-side automatic context management forwarded to Kiro
+- **New**: `anthropic_beta` header passthrough to `additionalModelRequestFields.anthropic_beta`
+- **New**: OpenAI-compatible `reasoning_effort` and `thinking` parameters also mapped to Kiro `additionalModelRequestFields`
+- **New**: Payload size limiter — when payload exceeds 380KB, oldest large tool results are truncated to 2000 chars with marker; prevents Kiro API rejection on long conversations
+
 ### v1.6.2 (2026-5-13)
 
 #### Account Switching

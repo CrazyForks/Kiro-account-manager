@@ -411,6 +411,16 @@ export function openaiToKiro(
   // 转换工具定义
   const kiroTools = convertOpenAITools(request.tools, toolNameRegistry)
 
+  // OpenAI 兼容请求的 thinking/effort 映射到 Kiro additionalModelRequestFields
+  const additionalFields: Record<string, unknown> = {}
+  if (request.thinking && request.thinking.type !== 'disabled') {
+    additionalFields.thinking = { type: 'adaptive' }
+  }
+  if (request.reasoning_effort) {
+    additionalFields.effort = request.reasoning_effort
+  }
+  const additionalModelRequestFields = Object.keys(additionalFields).length > 0 ? additionalFields : undefined
+
   return buildKiroPayload(
     finalContent,
     modelId,
@@ -430,7 +440,8 @@ export function openaiToKiro(
       documents,
       conversationId: request.conversation_id,
       context: request.kiro_context
-    }
+    },
+    additionalModelRequestFields
   )
 }
 
@@ -596,7 +607,7 @@ export function kiroToOpenaiResponse(
   usage: KiroUsage,
   model: string,
   toolNameRegistry: ToolNameRegistry = new ToolNameRegistry(),
-  reasoningContent?: { text: string; signature?: string }
+  reasoningContent?: { text?: string; signature?: string; redactedContent?: string }
 ): OpenAIChatResponse {
   const restoredToolUses = toolNameRegistry.restoreToolUses(toolUses)
   const openaiUsage: OpenAIChatResponse['usage'] = {
@@ -861,11 +872,25 @@ export function claudeToKiro(
   // 转换工具定义
   const kiroTools = convertClaudeTools(request.tools, toolNameRegistry)
 
-  // 将 Claude thinking 参数映射为 Kiro additionalModelRequestFields
-  let additionalModelRequestFields: Record<string, unknown> | undefined
+  // 将 Claude 模型参数映射为 Kiro additionalModelRequestFields
+  // Kiro schema 枚举为 ["adaptive", "disabled"]，统一映射为 adaptive 不带 budget_tokens
+  const additionalFields: Record<string, unknown> = {}
   if (request.thinking && request.thinking.type !== 'disabled') {
-    additionalModelRequestFields = { thinking: request.thinking }
+    additionalFields.thinking = { type: 'adaptive' }
   }
+  // effort 参数透传（Claude Code 4.6+ 支持，low/medium/high/max）
+  if (request.output_config?.effort) {
+    additionalFields.effort = request.output_config.effort
+  }
+  // context_management beta 透传（API 侧自动上下文管理）
+  if (request.context_management) {
+    additionalFields.context_management = request.context_management
+  }
+  // anthropic_beta header 透传
+  if (request.anthropic_beta && request.anthropic_beta.length > 0) {
+    additionalFields.anthropic_beta = request.anthropic_beta
+  }
+  const additionalModelRequestFields = Object.keys(additionalFields).length > 0 ? additionalFields : undefined
 
   return buildKiroPayload(
     finalContent,
@@ -954,6 +979,7 @@ function extractClaudeAssistantContent(
   let content = ''
   let thinking = ''
   let signature: string | undefined
+  let redactedContent: string | undefined
 
   if (typeof msg.content === 'string') {
     content = msg.content
@@ -964,6 +990,9 @@ function extractClaudeAssistantContent(
       } else if (block.type === 'thinking' && block.thinking) {
         thinking += block.thinking
         signature = block.signature || signature
+      } else if (block.type === 'redacted_thinking' && block.data) {
+        // redacted_thinking 是加密的思考内容，原样保留
+        redactedContent = (redactedContent || '') + block.data
       } else if (block.type === 'tool_use' && block.id && block.name) {
         if (!block.input || typeof block.input !== 'object' || Array.isArray(block.input)) {
           throw new Error(`tool_use requires object input: ${block.name}`)
@@ -982,12 +1011,15 @@ function extractClaudeAssistantContent(
     content = ' '
   }
 
-  if (thinking) {
-    return {
-      content,
-      toolUses,
-      reasoningContent: signature ? { reasoningText: { text: thinking, signature } } : { reasoningText: { text: thinking } }
+  if (thinking || redactedContent) {
+    const reasoningContent: KiroReasoningContent = {}
+    if (thinking) {
+      reasoningContent.reasoningText = signature ? { text: thinking, signature } : { text: thinking }
     }
+    if (redactedContent) {
+      reasoningContent.redactedContent = redactedContent
+    }
+    return { content, toolUses, reasoningContent }
   }
 
   return { content, toolUses }
@@ -1025,7 +1057,7 @@ export function kiroToClaudeResponse(
   usage: KiroUsage,
   model: string,
   toolNameRegistry: ToolNameRegistry = new ToolNameRegistry(),
-  reasoningContent?: { text: string; signature?: string }
+  reasoningContent?: { text?: string; signature?: string; redactedContent?: string }
 ): ClaudeResponse {
   const contentBlocks: ClaudeContentBlock[] = []
   const restoredToolUses = toolNameRegistry.restoreToolUses(toolUses)
@@ -1038,6 +1070,12 @@ export function kiroToClaudeResponse(
     } : {
       type: 'thinking',
       thinking: reasoningContent.text
+    })
+  }
+  if (reasoningContent?.redactedContent) {
+    contentBlocks.push({
+      type: 'redacted_thinking',
+      data: reasoningContent.redactedContent
     })
   }
 

@@ -2371,8 +2371,33 @@ export class ProxyServer {
       callKiroApiStream(
         account as any,
         kiroPayload,
-        (text, toolUse, isThinking, reasoningSignature) => {
+        (text, toolUse, isThinking, reasoningSignature, redactedContent) => {
           if (signal?.aborted || this.isResponseClosed(res)) return
+          // 优先处理 redacted_thinking（加密的 thinking 块，需单独 content_block）
+          if (redactedContent) {
+            if (hasStartedTextBlock) {
+              const blockStop = createClaudeStreamEvent('content_block_stop', { index: currentBlockIndex })
+              res.write(`event: content_block_stop\ndata: ${JSON.stringify(blockStop)}\n\n`)
+              currentBlockIndex++
+              hasStartedTextBlock = false
+            }
+            if (hasStartedThinkingBlock) {
+              flushThinkingSignature()
+              const blockStop = createClaudeStreamEvent('content_block_stop', { index: currentBlockIndex })
+              res.write(`event: content_block_stop\ndata: ${JSON.stringify(blockStop)}\n\n`)
+              currentBlockIndex++
+              hasStartedThinkingBlock = false
+            }
+            const blockStart = createClaudeStreamEvent('content_block_start', {
+              index: currentBlockIndex,
+              content_block: { type: 'redacted_thinking', data: redactedContent }
+            })
+            res.write(`event: content_block_start\ndata: ${JSON.stringify(blockStart)}\n\n`)
+            const blockStop = createClaudeStreamEvent('content_block_stop', { index: currentBlockIndex })
+            res.write(`event: content_block_stop\ndata: ${JSON.stringify(blockStop)}\n\n`)
+            currentBlockIndex++
+            return
+          }
           if (text && text.trim()) {
             if (isThinking) {
               // 原生 thinking 内容 → 输出为 Anthropic thinking block
