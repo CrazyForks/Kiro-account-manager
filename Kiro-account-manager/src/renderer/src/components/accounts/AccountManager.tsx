@@ -226,8 +226,8 @@ export function AccountManager({ onBack }: AccountManagerProps): React.ReactNode
 
   return (
     <div className="flex flex-col h-full">
-      {/* 顶部工具栏 - 玻璃态 */}
-      <header className="flex items-center justify-between gap-4 px-3 py-3 glass-toolbar">
+      {/* 顶部工具栏 - 玻璃态（relative z-20 抬升 stacking context，确保下拉菜单浮在卡片之上） */}
+      <header className="relative z-20 flex items-center justify-between gap-4 px-3 py-3 glass-toolbar">
         <div className="flex items-center gap-4">
           {onBack && (
             <Button variant="ghost" size="icon" onClick={onBack}>

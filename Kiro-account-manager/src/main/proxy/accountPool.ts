@@ -203,7 +203,11 @@ export class AccountPool {
     }
 
     // 检查 token 是否过期
-    if (account.expiresAt && account.expiresAt < now) {
+    // - 无 refreshToken 时直接判为不可用（无法刷新）
+    // - 有 refreshToken 时让账号通过 —— proxyServer.getAvailableAccount 会检测
+    //   isTokenExpiringSoon 并主动调用 refreshToken；若刷新失败会通过 markNeedsRefresh
+    //   设置 isAvailable=false，下次循环再被本函数 line 210 跳过，形成闭环
+    if (account.expiresAt && account.expiresAt < now && !account.refreshToken) {
       return false
     }
 

@@ -272,6 +272,71 @@ The project is configured with GitHub Actions workflow for auto building all pla
 ## 📋 Changelog
 
 
+### v1.6.9 (2026-5-24)
+
+#### Full Theme Adaptation
+- **Refactor**: All dialog/card hardcoded colors replaced with theme/semantic tokens — `text-green-500/600` → `text-success`, `text-red-500/600` → `text-destructive`, `text-amber/orange-500/600` → `text-warning`, decorative `bg-blue-50/...` → `bg-primary/[0.04~0.15]`
+- **Scope**: AccountDetailDialog, AccountCard, AccountListRow, ModelsDialog, AccountSelectDialog, ProxyLogsDialog, ProxyDetailedLogsDialog, ApiKeyUsageDialog, ClientConfigDialog, EditAccountDialog, SteeringEditor, AddAccountDialog, ApiKeyManager, ProxyPanel — 14+ components
+- **Refactor**: `_helpers.ts` `getStatusBadgeClass` status colors fully tokenized with auto dark mode support
+- **Optimization**: All dialogs/cards now instantly follow theme color changes — no more "some elements don't update on theme switch"
+
+#### Account Card Solid Background
+- **New**: `--card-solid` CSS variable (light `#FFFFFF` / dark `#1A2236`) — dedicated opaque background for account cards
+- **New**: `.bg-solid-card` utility class with dual-class selector (`.glass-card.bg-solid-card`) to override glass-card transparent background and disable `backdrop-filter`
+- **Fixed**: Theme color (e.g. orange) bleeding through 72% transparent `bg-card` into account data area causing "tinted overlay" effect
+- **Preserved**: Other glass elements (dialog/popover/toolbar/sidebar/KIRO quota cards) retain `bg-card` transparency
+
+#### List/Card View Visual Improvements
+- **Refactor**: Tag chips changed from solid fill to translucent outlined style (12% tag color background + tag color text + 30% tag color border), more subtle
+- **Refactor**: `generateRowGlowStyle` single-tag case removes horizontal background gradient, keeping only left 3px color stripe; multi-tag keeps vertical gradient stripe
+- **Fixed**: Card/list row selection state overridden by multi-tag inline style (`box-shadow`/`background`) causing no visual feedback — switched to absolutely positioned overlay layer (`absolute inset-0 ring-2 ring-inset ring-primary/60 bg-primary/[0.08] z-10`) isolated from inline style
+- **Optimization**: Selection state enhanced to `ring-2 ring-primary/60` + `bg-primary/[0.08]` + primary shadow
+
+#### Group Management Refactor (Independent View Mode)
+- **New**: `useAccountsStore` added `activeGroupTab` state (`'all' | 'ungrouped' | <groupId>`) with localStorage persistence — replaces multi-select filter logic
+- **New**: `getFilteredAccounts()` filters by `activeGroupTab` first (mutually exclusive)
+- **Refactor**: Toolbar "Group" button now a 3-in-1 menu — Switch View / Bulk Move / Manage Groups
+  - Button text dynamically shows current tab name + color dot + count
+  - Dropdown menu uses 2-column compact grid to save vertical space
+  - User groups listed once (merged switch and bulk move zones)
+  - When accounts are selected, hovering a tile reveals end-of-row ⇄ button to bulk move
+- **Removed**: AccountFilter group chip multi-select zone (eliminates dual-control conflict with tabs)
+- **Fixed**: Dropdown menu obscured by cards — `<header>` got `relative z-20` to elevate stacking context (`.glass-toolbar`'s backdrop-filter creates isolated z layer)
+
+#### Account Toolbar Compactness
+- **Refactor**: 6 toolbar buttons (tags/privacy/filter/check/delete/refresh) changed to icon-only + tooltip mode (`size="icon" h-8 w-8`), saving ~280px width
+- **Optimization**: Tags button selected state uses primary color dot (6px) instead of `ChevronDown`, more restrained
+- **Optimization**: Delete button hover turns `bg-destructive/10` red as warning
+- **Optimization**: Tooltips dynamically show selected count (e.g. "Delete 5 selected accounts"), disabled state hints "select first"
+- **New**: Standalone "Clear Selection" X button (only shown when selected), red hover hint
+- **Preserved**: Group button (with current tab name) + Select All button (with count) keep text for information value
+
+#### Pro Plan Customization in Registration Page
+- **New**: `ProPlanType` type — Pro / Pro+ / Power, mapped to Kiro backend `Q_DEVELOPER_STANDALONE_{PRO|PRO_PLUS|POWER}` qSubscriptionType
+- **New**: 3-choice chip buttons (blue/purple/gold business colors) added below "Auto-fetch Pro subscription link" toggle, localStorage persistent
+- **Refactor**: `fetchProSubscriptionUrl` uses user-selected plan type instead of hardcoded PRO
+
+#### Proxy Server Enhancements
+- **Fixed**: Multi-account mode "expired token accounts never refreshed" bug — `accountPool.isAccountAvailable` only marks accounts unavailable when `refreshToken` is missing; expired accounts with refreshToken pass through to `proxyServer.getAvailableAccount` for refresh; refresh failures auto-isolated via `markNeedsRefresh` forming a closed loop
+- **New**: `ProxyConfig` added `multiAccountSelectionMode: 'all' | 'groups'` and `multiAccountGroupIds: string[]` fields
+- **New**: Multi-account rotation added "Scope" config — All Accounts / Specific Groups (chip multi-select including "Ungrouped" special option)
+- **New**: `syncAccounts` filters accounts by selected groups in multi-account + groups mode
+- **New**: Proxy panel UI added "Scope" toggle + group chips (user group colors + counts) + real-time account count preview
+- **Sync**: Preload IPC types synced (`multiAccountSelectionMode` / `multiAccountGroupIds` / `accountSelectionStrategy`)
+
+#### Proxy Panel UI Compactness
+- **Refactor**: Basic config + API Key merged into 1 row 12-column grid — Port(2) + Host(3) + API Key(7)
+- **Refactor**: API Key operation buttons (sk-xxx format selector / random generate / copy / manage) all `icon-only h-7 w-7` moved to Label row right side
+- **Refactor**: Advanced settings changed from 2 to 3 columns, all description `<p>` tags moved to Label `title` tooltip (saves 30-40% vertical space)
+- **Refactor**: Token Buffer toggle + number input merged into `col-span-3` row (`[Auto-trim toggle 160px][Number input flex-1]`)
+- **Optimization**: Mode toggle row changed from `flex-wrap` to `grid-cols-3`, 3 toggles (auto-switch/log requests/stream events) on one row
+- **Fixed**: `sk-xxx` dropdown `h-6` clipped by Select's internal `py-2` — used Tailwind arbitrary attribute selector `[&>button]:h-7 [&>button]:py-0 [&>button]:px-2.5` to force override
+- **Optimization**: Advanced settings header added `Settings2` icon + `uppercase tracking-wider` minimalized
+
+#### Bug Fixes
+- **Fixed**: `AccountManager.tsx` trailing extra `}` causing TypeScript syntax error
+- **Optimization**: `AccountFilter.tsx` cleaned up unused `groups` destructuring
+
 ### v1.6.8 (2026-5-23)
 
 #### Token Counting Precision Refactor

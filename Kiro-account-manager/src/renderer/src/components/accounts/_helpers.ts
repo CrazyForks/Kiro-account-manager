@@ -40,25 +40,22 @@ export function generateGlowStyle(tagColors: string[]): CSSProperties {
     return `${toRgba(c)} ${percent}%, ${toRgba(c)} ${nextPercent}%`
   }).join(', ')
   return {
-    background: `linear-gradient(white, white) padding-box, linear-gradient(135deg, ${gradientColors}) border-box`,
+    background: `linear-gradient(var(--card-solid), var(--card-solid)) padding-box, linear-gradient(135deg, ${gradientColors}) border-box`,
     border: '1.5px solid transparent',
     boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.05)'
   }
 }
 
-// 列表行用：单标签简化光晕（不改 border，只加微妙的左侧/底部色彩）
+// 列表行用：标签色带 — 只保留左边 3px 色带作为身份识别，不染色行背景避免多行列表花花绿绿
 export function generateRowGlowStyle(tagColors: string[]): CSSProperties {
   if (tagColors.length === 0) return {}
   if (tagColors.length === 1) {
-    const color = toRgba(tagColors[0])
-    const colorBg = color.replace('1)', '0.06)')
     return {
-      borderLeftColor: color,
-      borderLeftWidth: '3px',
-      background: `linear-gradient(90deg, ${colorBg} 0%, transparent 30%)`
+      borderLeftColor: toRgba(tagColors[0]),
+      borderLeftWidth: '3px'
     }
   }
-  // 多标签：彩虹渐变左边条
+  // 多标签：垂直渐变左边色带（双层 backgroundClip trick，渐变只在 border-box 的 3px 区域显示）
   const gradientStops = tagColors.map((c, i) => {
     const percent = (i / (tagColors.length - 1)) * 100
     return `${toRgba(c)} ${percent}%`
@@ -66,7 +63,7 @@ export function generateRowGlowStyle(tagColors: string[]): CSSProperties {
   return {
     borderLeftWidth: '3px',
     borderLeftColor: 'transparent',
-    backgroundImage: `linear-gradient(var(--color-card), var(--color-card)), linear-gradient(180deg, ${gradientStops})`,
+    backgroundImage: `linear-gradient(var(--card-solid), var(--card-solid)), linear-gradient(180deg, ${gradientStops})`,
     backgroundOrigin: 'padding-box, border-box',
     backgroundClip: 'padding-box, border-box',
     backgroundRepeat: 'no-repeat'
@@ -122,11 +119,11 @@ export const StatusLabelsEn: Record<string, string> = {
 
 // 状态徽章 Tailwind class
 export function getStatusBadgeClass(status: string, isUnauthorized: boolean): string {
-  if (isUnauthorized) return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30'
+  if (isUnauthorized) return 'text-destructive bg-destructive/10'
   switch (status) {
-    case 'active': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30'
-    case 'error': return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30'
-    case 'expired': return 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30'
+    case 'active': return 'text-success bg-success/10'
+    case 'error': return 'text-destructive bg-destructive/10'
+    case 'expired': return 'text-warning bg-warning/10'
     case 'refreshing': return 'text-primary bg-primary/10'
     default: return 'text-muted-foreground bg-muted'
   }

@@ -81,6 +81,8 @@ interface AccountsState {
 
   // 筛选和排序
   filter: AccountFilter
+  /** 当前激活的分组 Tab：'all' | 'ungrouped' | <groupId>，互斥 */
+  activeGroupTab: string
   sort: AccountSort
 
   // 选中的账号（用于批量操作）
@@ -175,6 +177,7 @@ interface AccountsActions {
   // 筛选和排序
   setFilter: (filter: AccountFilter) => void
   clearFilter: () => void
+  setActiveGroupTab: (tab: string) => void
   setSort: (sort: AccountSort) => void
   getFilteredAccounts: () => Account[]
 
@@ -282,6 +285,15 @@ const defaultSort: AccountSort = { field: 'lastUsedAt', order: 'desc' }
 // 默认筛选
 const defaultFilter: AccountFilter = {}
 
+// 从 localStorage 恢复分组 Tab（遵循 Electron renderer 环境总是可用）
+const loadActiveGroupTab = (): string => {
+  try {
+    return localStorage.getItem('accounts_activeGroupTab') || 'all'
+  } catch {
+    return 'all'
+  }
+}
+
 export const useAccountsStore = create<AccountsStore>()((set, get) => ({
   // 初始状态
   appVersion: '1.0.0',
@@ -290,6 +302,7 @@ export const useAccountsStore = create<AccountsStore>()((set, get) => ({
   tags: new Map(),
   activeAccountId: null,
   filter: defaultFilter,
+  activeGroupTab: loadActiveGroupTab(),
   sort: defaultSort,
   selectedIds: new Set(),
   isLoading: false,
@@ -649,14 +662,26 @@ export const useAccountsStore = create<AccountsStore>()((set, get) => ({
     set({ filter: defaultFilter })
   },
 
+  setActiveGroupTab: (tab) => {
+    try { localStorage.setItem('accounts_activeGroupTab', tab) } catch { /* no-op */ }
+    set({ activeGroupTab: tab })
+  },
+
   setSort: (sort) => {
     set({ sort })
   },
 
   getFilteredAccounts: () => {
-    const { accounts, filter, sort } = get()
+    const { accounts, filter, sort, activeGroupTab } = get()
 
     let result = Array.from(accounts.values())
+
+    // 优先按分组 Tab 互斥过滤（与 filter.groupIds 独立）
+    if (activeGroupTab === 'ungrouped') {
+      result = result.filter((a) => !a.groupId)
+    } else if (activeGroupTab !== 'all') {
+      result = result.filter((a) => a.groupId === activeGroupTab)
+    }
 
     // 应用筛选
     if (filter.search) {

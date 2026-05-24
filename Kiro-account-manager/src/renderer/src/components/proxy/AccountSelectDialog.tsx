@@ -103,7 +103,7 @@ export function AccountSelectDialog({
       return {
         icon: <Ban className="h-3.5 w-3.5" />,
         text: isEn ? 'Banned' : '已封禁',
-        color: 'bg-red-500/10 text-red-500'
+        color: 'bg-destructive/10 text-destructive'
       }
     }
     
@@ -112,19 +112,19 @@ export function AccountSelectDialog({
         return {
           icon: <AlertCircle className="h-3.5 w-3.5" />,
           text: isEn ? 'Error' : '错误',
-          color: 'bg-red-500/10 text-red-500'
+          color: 'bg-destructive/10 text-destructive'
         }
       case 'expired':
         return {
           icon: <Ban className="h-3.5 w-3.5" />,
           text: isEn ? 'Expired' : '已过期',
-          color: 'bg-orange-500/10 text-orange-500'
+          color: 'bg-warning/10 text-warning'
         }
       case 'refreshing':
         return {
           icon: <Zap className="h-3.5 w-3.5" />,
           text: isEn ? 'Refreshing' : '刷新中',
-          color: 'bg-yellow-500/10 text-yellow-500'
+          color: 'bg-warning/10 text-warning'
         }
       case 'active':
         return null // 正常状态不显示标签
@@ -137,7 +137,7 @@ export function AccountSelectDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl" onClick={() => onOpenChange(false)} />
+      <div className="absolute inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
       <Card className="relative w-[600px] max-h-[80vh] shadow-2xl border-0 overflow-hidden animate-in fade-in zoom-in-95 duration-200 glass-card-strong">
         <CardHeader className="pb-3 border-b sticky top-0 z-10">
           <div className="flex items-center justify-between">
@@ -207,10 +207,10 @@ export function AccountSelectDialog({
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        hasError ? 'bg-red-500/10' : 'bg-primary/10'
+                        hasError ? 'bg-destructive/10' : 'bg-primary/10'
                       }`}>
                         {hasError ? (
-                          <AlertCircle className="h-5 w-5 text-red-500" />
+                          <AlertCircle className="h-5 w-5 text-destructive" />
                         ) : (
                           <User className="h-5 w-5 text-primary" />
                         )}
@@ -233,7 +233,7 @@ export function AccountSelectDialog({
                         
                         {/* 错误信息 */}
                         {acc.lastError && (
-                          <div className="text-xs text-red-500 mt-1 truncate">
+                          <div className="text-xs text-destructive mt-1 truncate">
                             {acc.lastError}
                           </div>
                         )}
@@ -253,7 +253,7 @@ export function AccountSelectDialog({
                         <div className="mt-2 w-full bg-muted rounded-full h-1.5 overflow-hidden">
                           <div 
                             className={`h-full transition-all ${
-                              usagePercent > 80 ? 'bg-red-500' : usagePercent > 50 ? 'bg-yellow-500' : 'bg-green-500'
+                              usagePercent > 80 ? 'bg-destructive' : usagePercent > 50 ? 'bg-warning' : 'bg-success'
                             }`}
                             style={{ width: `${usagePercent}%` }}
                           />

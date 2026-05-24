@@ -134,7 +134,7 @@ const KIRO_ENDPOINTS = [
   },
   {
     url: 'https://q.us-east-1.amazonaws.com/SendMessageStreaming',
-    origin: 'AI_EDITOR',
+    origin: 'CLI',
     amzTarget: 'AmazonQDeveloperStreamingService.SendMessage',
     name: 'AmazonQCLI'
   }

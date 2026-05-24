@@ -136,8 +136,8 @@ export function AboutPage() {
               {updateInfo.hasUpdate ? (
                 <>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-green-500/10">
-                      <Download className="h-6 w-6 text-green-500" />
+                    <div className="p-2 rounded-full bg-success/10">
+                      <Download className="h-6 w-6 text-success" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg">{isEn ? 'New Version Available' : '发现新版本'}</h3>
@@ -207,8 +207,8 @@ export function AboutPage() {
               ) : (
                 <>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-green-500/10">
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    <div className="p-2 rounded-full bg-success/10">
+                      <CheckCircle className="h-6 w-6 text-success" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg">{isEn ? 'Up to Date' : '已是最新版本'}</h3>

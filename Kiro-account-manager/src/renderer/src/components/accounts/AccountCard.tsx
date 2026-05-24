@@ -64,7 +64,7 @@ function generateGlowStyle(tagColors: string[]): React.CSSProperties {
   }).join(', ')
   
   return {
-    background: `linear-gradient(white, white) padding-box, linear-gradient(135deg, ${gradientColors}) border-box`,
+    background: `linear-gradient(var(--card-solid), var(--card-solid)) padding-box, linear-gradient(135deg, ${gradientColors}) border-box`,
     border: '1.5px solid transparent',
     boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.05)'
   }
@@ -480,21 +480,25 @@ export const AccountCard = memo(function AccountCard({
   return (
     <Card
       className={cn(
-        'relative cursor-pointer h-full flex flex-col overflow-hidden',
+        'relative cursor-pointer h-full flex flex-col overflow-hidden bg-solid-card',
         // 默认 hover 浮起 + 阴影增强（除 active/封禁状态外，状态自带样式）
         !account.isActive && !isUnauthorized && 'hover-lift',
         // 当前使用：流光边框，去掉默认边框
         account.isActive && 'border-transparent active-glow-border',
         // 封禁：红色边框
-        isUnauthorized && 'border-red-400/50',
-        // 选中态：主色高亮环
-        isSelected && !account.isActive && !isUnauthorized && 'ring-1 ring-primary/40',
+        isUnauthorized && 'border-destructive/50',
         // 有标签光环：透明边框给光环让位
         accountTags.length > 0 && !account.isActive && !isUnauthorized && 'border-transparent'
       )}
       style={finalStyle}
       onClick={() => toggleSelection(account.id)}
     >
+      {/* 选中态独立覆盖层 — 避免被标签光环的 inline style (box-shadow/background) 覆盖
+          z-10 在卡片内容上方，pointer-events-none 让交互穿透到 Card */}
+      {isSelected && !account.isActive && !isUnauthorized && (
+        <div className="absolute inset-0 pointer-events-none rounded-[inherit] ring-2 ring-inset ring-primary/60 bg-primary/[0.08] z-10" />
+      )}
+
       {/* 封禁角标 - 当前使用时显示在流光边框上 */}
       {account.isActive && isUnauthorized && (
         <div className="banned-badge" title={t('accounts.card.banned')} />
@@ -523,7 +527,7 @@ export const AccountCard = memo(function AccountCard({
                  <h3 
                    className={cn(
                      "font-semibold text-sm truncate cursor-pointer transition-colors",
-                     emailCopied ? "text-green-500" : "text-foreground/90 hover:text-primary"
+                     emailCopied ? "text-success" : "text-foreground/90 hover:text-primary"
                    )}
                    title={`${getDisplayName(account)} (${isEn ? 'Click to copy' : '点击复制'})`}
                    onClick={(e) => {
@@ -539,10 +543,10 @@ export const AccountCard = memo(function AccountCard({
                  {/* Status Badge */}
                  <div className={cn(
                     "text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0",
-                    isUnauthorized ? "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30" :
-                    account.status === 'active' ? "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30" :
-                    account.status === 'error' ? "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30" :
-                    account.status === 'expired' ? "text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30" :
+                    isUnauthorized ? "text-destructive bg-destructive/10" :
+                    account.status === 'active' ? "text-success bg-success/10" :
+                    account.status === 'error' ? "text-destructive bg-destructive/10" :
+                    account.status === 'expired' ? "text-warning bg-warning/10" :
                     account.status === 'refreshing' ? "text-primary bg-primary/10" :
                     "text-muted-foreground bg-muted"
                  )}>
@@ -589,7 +593,7 @@ export const AccountCard = memo(function AccountCard({
                 {account.idp}
             </Badge>
             {account.isActive && (
-              <Badge variant="default" className="ml-auto h-5 bg-green-500 text-white border-0 hover:bg-green-600">
+              <Badge variant="default" className="ml-auto h-5 bg-success text-white border-0 hover:bg-success/90">
                 {isEn ? 'Active' : '当前使用'}
               </Badge>
             )}
@@ -601,7 +605,7 @@ export const AccountCard = memo(function AccountCard({
                 <span className="text-muted-foreground font-medium">{isEn ? 'Usage' : '使用量'}</span>
                 <span className={cn(
                   "font-mono font-medium tabular-nums",
-                  isCritical ? "text-red-600" : isHighUsage ? "text-amber-600" : "text-foreground"
+                  isCritical ? "text-destructive" : isHighUsage ? "text-warning" : "text-foreground"
                 )}>
                    {(account.usage.percentUsed * 100).toFixed(usagePrecision ? 2 : 0)}%
                    {isCritical && (
@@ -620,7 +624,7 @@ export const AccountCard = memo(function AccountCard({
                 return (
                   <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
                     <div
-                      className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-300"
+                      className="absolute inset-y-0 left-0 bg-warning transition-all duration-300"
                       style={{ width: `${planRatioPct}%` }}
                     />
                     <div
@@ -635,7 +639,7 @@ export const AccountCard = memo(function AccountCard({
                   <div
                     className={cn(
                       "absolute inset-y-0 left-0 transition-all duration-300",
-                      isHighUsage ? "bg-amber-500" : "bg-primary"
+                      isHighUsage ? "bg-warning" : "bg-primary"
                     )}
                     style={{ width: `${Math.min(percent * 100, 100)}%` }}
                   />
@@ -670,7 +674,7 @@ export const AccountCard = memo(function AccountCard({
            {/* 基础额度 */}
            {account.usage.baseLimit !== undefined && account.usage.baseLimit > 0 && (
              <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+               <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                <span className="text-muted-foreground">{isEn ? 'Base:' : '基础:'}</span>
                <span className="font-medium">{formatUsage(account.usage.baseCurrent ?? 0)}/{formatUsage(account.usage.baseLimit)}</span>
                {account.usage.nextResetDate && (
@@ -686,7 +690,7 @@ export const AccountCard = memo(function AccountCard({
            {/* 试用额度 */}
            {account.usage.freeTrialLimit !== undefined && account.usage.freeTrialLimit > 0 && (
              <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0" />
+               <div className="w-1.5 h-1.5 rounded-full bg-warning flex-shrink-0" />
                <span className="text-muted-foreground">{isEn ? 'Trial:' : '试用:'}</span>
                <span className="font-medium">{formatUsage(account.usage.freeTrialCurrent ?? 0)}/{formatUsage(account.usage.freeTrialLimit)}</span>
                {account.usage.freeTrialExpiry && (
@@ -702,7 +706,7 @@ export const AccountCard = memo(function AccountCard({
            {/* 奖励额度 */}
            {account.usage.bonuses?.map((bonus) => (
              <div key={bonus.code} className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
+               <div className="w-1.5 h-1.5 rounded-full bg-success flex-shrink-0" />
                <span className="text-muted-foreground truncate max-w-[80px]" title={bonus.name}>{bonus.name}:</span>
                <span className="font-medium">{formatUsage(bonus.current)}/{formatUsage(bonus.limit)}</span>
                {bonus.expiresAt && (
@@ -743,7 +747,7 @@ export const AccountCard = memo(function AccountCard({
             <div className="text-[10px] text-muted-foreground flex flex-col leading-tight gap-0.5">
                 <div className="flex items-center gap-1">
                    <Clock className="h-3 w-3" />
-                   <span className={isExpiringSoon ? "text-amber-600 font-medium" : ""}>
+                   <span className={isExpiringSoon ? "text-warning font-medium" : ""}>
                       {account.subscription.daysRemaining !== undefined ? (isEn ? `${account.subscription.daysRemaining}d left` : `剩 ${account.subscription.daysRemaining} 天`) : '-'}
                    </span>
                 </div>
@@ -786,7 +790,7 @@ export const AccountCard = memo(function AccountCard({
                   <KeyRound className={cn("h-3.5 w-3.5", isRefreshingToken && "animate-pulse")} />
                </Button>
                
-               <Button size="icon" variant="ghost" className={cn("h-7 w-7 text-muted-foreground hover:text-foreground", copied && "text-green-500")} onClick={(e) => { e.stopPropagation(); handleCopyCredentials() }} title={isEn ? 'Copy credentials' : '复制凭证'}>
+               <Button size="icon" variant="ghost" className={cn("h-7 w-7 text-muted-foreground hover:text-foreground", copied && "text-success")} onClick={(e) => { e.stopPropagation(); handleCopyCredentials() }} title={isEn ? 'Copy credentials' : '复制凭证'}>
                   {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                </Button>
 
@@ -816,7 +820,7 @@ export const AccountCard = memo(function AccountCard({
       {/* 封禁详情弹窗 */}
       {showBanDialog && isUnauthorized && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl" onClick={() => setShowBanDialog(false)} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowBanDialog(false)} />
           <div className="relative bg-background rounded-xl shadow-2xl w-full max-w-lg m-4 animate-in fade-in zoom-in-95 duration-200 border overflow-hidden">
             <div className="p-4 border-b flex items-center justify-between bg-red-50 dark:bg-red-900/20">
               <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
@@ -878,9 +882,9 @@ export const AccountCard = memo(function AccountCard({
       {/* 订阅管理弹窗 */}
       {showSubscriptionDialog && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl" onClick={() => { setShowSubscriptionDialog(false); setIsFirstTimeUser(false); setSubscriptionError(null); setSubscriptionSuccess(null) }} />
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowSubscriptionDialog(false); setIsFirstTimeUser(false); setSubscriptionError(null); setSubscriptionSuccess(null) }} />
           <div className="relative bg-background rounded-xl shadow-2xl w-full max-w-2xl m-4 animate-in fade-in zoom-in-95 duration-200 border overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-primary/10 to-purple-500/10">
+            <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-primary/10 to-[var(--gradient-to)]/10">
               <div className="flex items-center gap-2 text-primary">
                 <CreditCard className="h-5 w-5" />
                 <span className="font-bold">{isEn ? (isFirstTimeUser ? 'Choose Your Plan' : 'Subscription Plans') : (isFirstTimeUser ? '选择订阅计划' : '订阅计划')}</span>
@@ -891,7 +895,7 @@ export const AccountCard = memo(function AccountCard({
             </div>
             <div className="p-4 space-y-4">
               {isFirstTimeUser ? (
-                <div className="text-xs text-muted-foreground mb-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 p-2 rounded-lg">
+                <div className="text-xs text-muted-foreground mb-2 bg-warning/10 text-warning p-2 rounded-lg">
                   {isEn ? 'Please select a subscription plan to continue.' : '请选择一个订阅计划以继续使用。'}
                 </div>
               ) : (
@@ -909,7 +913,7 @@ export const AccountCard = memo(function AccountCard({
               )}
               
               {subscriptionSuccess && (
-                <div className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 p-2 rounded-lg flex items-center gap-2">
+                <div className="text-xs bg-success/10 text-success p-2 rounded-lg flex items-center gap-2">
                   <Check className="h-4 w-4 shrink-0" />
                   <span>{subscriptionSuccess}</span>
                 </div>

@@ -235,15 +235,19 @@ function AccountListRowComponent({
   return (
     <div
       className={cn(
-        'group relative flex items-center gap-3 pl-3 pr-3 py-2.5 rounded-xl border bg-card transition-all duration-300 cursor-pointer overflow-hidden',
+        'group relative flex items-center gap-3 pl-3 pr-3 py-2.5 rounded-xl border bg-solid-card transition-all duration-300 cursor-pointer overflow-hidden',
         'hover:shadow-md',
         account.isActive && 'active-glow-border border-transparent',
-        !account.isActive && isSelected && 'ring-1 ring-primary/40',
-        !account.isActive && !isUnauthorized && tagColors.length === 0 && 'border-border'
+        !account.isActive && !isUnauthorized && tagColors.length === 0 && !isSelected && 'border-border'
       )}
       style={rowStyle}
       onClick={() => toggleSelection(account.id)}
     >
+      {/* 选中态独立覆盖层 — 避免被多标签 rowStyle 的 backgroundImage 覆盖 */}
+      {isSelected && !account.isActive && !isUnauthorized && (
+        <div className="absolute inset-0 pointer-events-none rounded-[inherit] ring-2 ring-inset ring-primary/60 bg-primary/[0.08] z-10" />
+      )}
+
       {/* Checkbox */}
       <div
         className={cn(
@@ -264,7 +268,7 @@ function AccountListRowComponent({
           <h3
             className={cn(
               'font-semibold text-sm truncate cursor-pointer transition-colors min-w-0',
-              emailCopied ? 'text-green-500' : 'text-foreground/90 hover:text-primary'
+              emailCopied ? 'text-success' : 'text-foreground/90 hover:text-primary'
             )}
             title={`${displayName} (${isEn ? 'Click to copy' : '点击复制'})`}
             onClick={handleCopyEmail}
@@ -289,15 +293,22 @@ function AccountListRowComponent({
               {accountGroup.name}
             </span>
           )}
-          {accountTags.slice(0, 4).map(tag => (
-            <span
-              key={tag.id}
-              className="px-1.5 py-0.5 rounded-sm text-white font-medium shadow-sm flex-shrink-0"
-              style={{ backgroundColor: toRgba(tag.color) }}
-            >
-              {tag.name}
-            </span>
-          ))}
+          {accountTags.slice(0, 4).map(tag => {
+            const tagColor = toRgba(tag.color)
+            return (
+              <span
+                key={tag.id}
+                className="px-1.5 py-0.5 rounded-md font-medium flex-shrink-0 border"
+                style={{
+                  backgroundColor: tagColor.replace(/[\d.]+\)$/, '0.12)'),
+                  color: tagColor,
+                  borderColor: tagColor.replace(/[\d.]+\)$/, '0.30)')
+                }}
+              >
+                {tag.name}
+              </span>
+            )
+          })}
           {accountTags.length > 4 && (
             <span className="px-1.5 py-0.5 text-muted-foreground bg-muted rounded-sm flex-shrink-0">
               +{accountTags.length - 4}
@@ -306,7 +317,7 @@ function AccountListRowComponent({
 
           {/* 错误信息（非封禁，因为封禁已用红色徽章显示） */}
           {account.lastError && !isUnauthorized && (
-            <span className="text-red-600 truncate flex-1 min-w-0 italic" title={account.lastError}>
+            <span className="text-destructive truncate flex-1 min-w-0 italic" title={account.lastError}>
               {account.lastError}
             </span>
           )}
@@ -369,7 +380,7 @@ function AccountListRowComponent({
         {/* Active 容器（始终保留宽度，确保后续元素位置固定） */}
         <div className="w-[60px] flex items-center">
           {account.isActive && (
-            <Badge className="h-5 px-2 bg-green-500 text-white border-0 hover:bg-green-600 text-[10px] flex items-center justify-center w-full">
+            <Badge className="h-5 px-2 bg-success text-white border-0 hover:bg-success/90 text-[10px] flex items-center justify-center w-full">
               <Power className="h-2.5 w-2.5 mr-0.5" />
               {isEn ? 'Active' : '当前'}
             </Badge>
@@ -386,11 +397,11 @@ function AccountListRowComponent({
           <span className="text-muted-foreground">{isEn ? 'Usage' : '使用量'}</span>
           <span className={cn(
             'font-mono font-medium tabular-nums',
-            isCritical ? 'text-red-500' : isHighUsage ? 'text-amber-600' : 'text-foreground'
+            isCritical ? 'text-destructive' : isHighUsage ? 'text-warning' : 'text-foreground'
           )}>
             {percentUsed.toFixed(usagePrecision ? 2 : 0)}%
             {isCritical && (
-              <span className="ml-1 text-[9px] text-red-600 font-semibold">
+              <span className="ml-1 text-[9px] text-destructive font-semibold">
                 +{(percentUsed - 100).toFixed(usagePrecision ? 2 : 0)}%
               </span>
             )}
@@ -401,22 +412,22 @@ function AccountListRowComponent({
             const planRatioPct = (100 / percentUsed) * 100
             return (
               <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
-                <div className="absolute inset-y-0 left-0 bg-amber-500 transition-all duration-300" style={{ width: `${planRatioPct}%` }} />
-                <div className="absolute inset-y-0 right-0 bg-red-500 transition-all duration-300" style={{ left: `${planRatioPct}%` }} />
+                <div className="absolute inset-y-0 left-0 bg-warning transition-all duration-300" style={{ width: `${planRatioPct}%` }} />
+                <div className="absolute inset-y-0 right-0 bg-destructive transition-all duration-300" style={{ left: `${planRatioPct}%` }} />
               </div>
             )
           }
           return (
             <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
               <div
-                className={cn('absolute inset-y-0 left-0 transition-all duration-300', isHighUsage ? 'bg-amber-500' : 'bg-primary')}
+                className={cn('absolute inset-y-0 left-0 transition-all duration-300', isHighUsage ? 'bg-warning' : 'bg-primary')}
                 style={{ width: `${Math.min(percentUsed, 100)}%` }}
               />
             </div>
           )
         })()}
         <div className="flex justify-between text-[9px] text-muted-foreground pt-0.5">
-          <span className={cn(isCritical && 'text-red-600 font-semibold')}>
+          <span className={cn(isCritical && 'text-destructive font-semibold')}>
             {formatUsage(account.usage.current)}
             {isCritical && ` (+${formatUsage(account.usage.current - account.usage.limit)})`}
           </span>
@@ -428,7 +439,7 @@ function AccountListRowComponent({
       <div className="flex-shrink-0 hidden lg:flex flex-col leading-tight gap-0.5 text-[10px] text-muted-foreground w-28">
         <div className="flex items-center gap-1" title={isEn ? 'Subscription days left' : '订阅剩余天数'}>
           <Clock className="h-3 w-3" />
-          <span className={isExpiringSoon ? 'text-amber-600 font-medium' : ''}>
+          <span className={isExpiringSoon ? 'text-warning font-medium' : ''}>
             {daysRemaining !== undefined ? (isEn ? `${daysRemaining}d` : `${daysRemaining}天`) : '-'}
           </span>
         </div>
@@ -440,7 +451,7 @@ function AccountListRowComponent({
           }
         >
           <KeyRound className="h-3 w-3" />
-          <span className={isTokenExpiringSoon ? 'text-red-500 font-medium' : ''}>
+          <span className={isTokenExpiringSoon ? 'text-destructive font-medium' : ''}>
             {account.credentials.expiresAt ? formatTokenExpiry(account.credentials.expiresAt, isEn) : '-'}
           </span>
         </div>
@@ -453,7 +464,7 @@ function AccountListRowComponent({
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+              className="h-7 w-7 text-warning hover:bg-warning/10"
               onClick={handleClearSuspended}
               disabled={isClearingSuspended}
               title={isEn ? 'Reset Suspended' : '重置封禁状态'}

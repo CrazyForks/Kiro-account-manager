@@ -283,19 +283,19 @@ export function MachineIdPage() {
 
       {/* 权限警告 */}
       {hasAdmin === false && (
-        <Card className="border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10 overflow-hidden">
+        <Card className="border-warning/50 bg-gradient-to-r from-warning/10 to-warning/5 overflow-hidden">
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/20">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <div className="p-2 rounded-lg bg-warning/20">
+                  <AlertTriangle className="h-5 w-5 text-warning" />
                 </div>
                 <div>
-                  <p className="font-medium text-amber-700 dark:text-amber-400">{isEn ? 'Admin Required' : '需要管理员权限'}</p>
-                  <p className="text-sm text-amber-600 dark:text-amber-500">{isEn ? 'Run as administrator to modify machine ID' : '修改机器码需要以管理员身份运行应用'}</p>
+                  <p className="font-medium text-warning">{isEn ? 'Admin Required' : '需要管理员权限'}</p>
+                  <p className="text-sm text-warning/80">{isEn ? 'Run as administrator to modify machine ID' : '修改机器码需要以管理员身份运行应用'}</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={handleRequestAdmin} className="border-amber-500/50 hover:bg-amber-500/10">
+              <Button variant="outline" size="sm" onClick={handleRequestAdmin} className="border-warning/50 hover:bg-warning/10">
                 <Shield className="h-4 w-4 mr-1" />
                 {isEn ? 'Restart as Admin' : '以管理员重启'}
               </Button>
@@ -348,7 +348,7 @@ export function MachineIdPage() {
                 disabled={!currentMachineId}
                 className="flex-1"
               >
-                {copiedId === 'current' ? <Check className="h-4 w-4 mr-1 text-green-500" /> : <Copy className="h-4 w-4 mr-1" />}
+                {copiedId === 'current' ? <Check className="h-4 w-4 mr-1 text-success" /> : <Copy className="h-4 w-4 mr-1" />}
                 {copiedId === 'current' ? (isEn ? 'Copied!' : '已复制') : (isEn ? 'Copy' : '复制')}
               </Button>
               <Button 
@@ -406,7 +406,7 @@ export function MachineIdPage() {
                     onClick={() => copyToClipboard(originalMachineId, 'original')}
                     className="flex-1"
                   >
-                    {copiedId === 'original' ? <Check className="h-4 w-4 mr-1 text-green-500" /> : <Copy className="h-4 w-4 mr-1" />}
+                    {copiedId === 'original' ? <Check className="h-4 w-4 mr-1 text-success" /> : <Copy className="h-4 w-4 mr-1" />}
                     {copiedId === 'original' ? (isEn ? 'Copied!' : '已复制') : (isEn ? 'Copy' : '复制')}
                   </Button>
                   <Button 
@@ -687,7 +687,7 @@ export function MachineIdPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* 背景遮罩 */}
           <div 
-            className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setShowAccountBindings(false)}
           />
           
@@ -769,7 +769,7 @@ export function MachineIdPage() {
                           )}
                         </div>
                         {boundMachineId && (
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                          <Badge variant="secondary" className="text-xs bg-success/10 text-success">
                             {isEn ? 'Bound' : '已绑定'}
                           </Badge>
                         )}
@@ -913,7 +913,7 @@ export function MachineIdPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* 背景遮罩 */}
           <div 
-            className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setShowHistory(false)}
           />
           
@@ -1045,9 +1045,9 @@ export function MachineIdPage() {
                   <p className="text-xs text-muted-foreground">{isEn ? 'Modifies /etc/machine-id, requires root' : '修改 /etc/machine-id，需要 root 权限'}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                <p className="text-xs text-amber-700 dark:text-amber-400">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+                <p className="text-xs text-warning">
                   {isEn ? 'Changing machine ID may affect some software licenses, proceed with caution' : '修改机器码可能影响部分软件的授权，请谨慎操作'}
                 </p>
               </div>

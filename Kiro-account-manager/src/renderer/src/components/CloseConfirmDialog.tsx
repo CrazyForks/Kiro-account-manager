@@ -27,11 +27,11 @@ export function CloseConfirmDialog() {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl" onClick={() => handleAction('cancel')} />
+      <div className="absolute inset-0 bg-black/50" onClick={() => handleAction('cancel')} />
       
       <div className="relative glass-card-strong rounded-2xl shadow-2xl w-full max-w-md m-4 animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* 头部 */}
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 p-6 border-b">
+        <div className="bg-gradient-to-r from-primary/10 to-[var(--gradient-to)]/10 p-6 border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">

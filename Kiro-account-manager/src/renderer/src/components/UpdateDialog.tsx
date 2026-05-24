@@ -97,7 +97,7 @@ export function UpdateDialog() {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
       
       <div className="relative glass-card-strong rounded-2xl shadow-2xl w-full max-w-md m-4 animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* 头部 */}
@@ -174,7 +174,7 @@ export function UpdateDialog() {
 
           {status === 'downloaded' && (
             <>
-              <div className="flex items-center gap-3 text-green-600">
+              <div className="flex items-center gap-3 text-success">
                 <CheckCircle className="h-6 w-6" />
                 <span className="font-medium">下载完成！</span>
               </div>

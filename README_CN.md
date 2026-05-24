@@ -272,6 +272,71 @@ npx electron-builder --linux --arm64
 ## 📋 更新日志
 
 
+### v1.6.9 (2026-5-24)
+
+#### UI 全面主题适配
+- **重构**: 所有弹窗/卡片硬编码颜色统一替换为主题/语义令牌 — `text-green-500/600` → `text-success`、`text-red-500/600` → `text-destructive`、`text-amber/orange-500/600` → `text-warning`、`bg-blue-50/...` 等装饰色 → `bg-primary/[0.04~0.15]`
+- **影响范围**: AccountDetailDialog、AccountCard、AccountListRow、ModelsDialog、AccountSelectDialog、ProxyLogsDialog、ProxyDetailedLogsDialog、ApiKeyUsageDialog、ClientConfigDialog、EditAccountDialog、SteeringEditor、AddAccountDialog、ApiKeyManager、ProxyPanel 等 14+ 组件
+- **重构**: `_helpers.ts` 的 `getStatusBadgeClass` 状态色全部 token 化，支持自动深色模式适配
+- **优化**: 切换主题色后所有弹窗/卡片立即跟随，不再有"主题切换部分元素不变"的问题
+
+#### 账户卡片纯色背景
+- **新增**: `--card-solid` CSS 变量（浅色模式 `#FFFFFF` / 深色模式 `#1A2236`）— 账户卡片专用不透明背景
+- **新增**: `.bg-solid-card` utility class，配合双 class 选择器（`.glass-card.bg-solid-card`）覆盖玻璃态半透明背景，禁用 `backdrop-filter`
+- **修复**: 主题色（橙色等）透过 72% 半透明 `bg-card` 渗入账户数据区导致"被蒙一层主题色"的问题
+- **保留**: 其他玻璃态（dialog/popover/toolbar/sidebar/KIRO 配额卡）仍用 `bg-card` 半透明，玻璃质感不变
+
+#### 列表/卡片视图视觉优化
+- **重构**: 标签 chip 从实色填充改为半透明描边样式（12% 标签色背景 + 标签色文字 + 30% 标签色边框），视觉柔和不刺眼
+- **重构**: `generateRowGlowStyle` 单标签场景去掉横向背景渐变，只保留左边 3px 色带；多标签保留垂直渐变左边带
+- **修复**: 卡片/列表行选中态被多标签 inline style（`box-shadow`/`background`）覆盖导致选中无视觉反馈 — 改用绝对定位独立覆盖层（`absolute inset-0 ring-2 ring-inset ring-primary/60 bg-primary/[0.08] z-10`），与 inline style 隔离
+- **优化**: 选中状态强化为 `ring-2 ring-primary/60` + `bg-primary/[0.08]` + 主色阴影
+
+#### 分组功能改造（独立视图切换）
+- **新增**: `useAccountsStore` 增加 `activeGroupTab` state（`'all' | 'ungrouped' | <groupId>`），localStorage 持久化 — 取代原"多选筛选"逻辑
+- **新增**: `getFilteredAccounts()` 开头优先按 `activeGroupTab` 互斥过滤账号
+- **重构**: 工具栏"分组"按钮改为三合一菜单 — 切换视图 / 批量移动 / 管理分组
+  - 按钮文字动态显示当前 Tab 名 + 颜色圆点 + 计数
+  - 下拉菜单 2 列网格紧凑布局，节省垂直空间
+  - 用户分组列表只列一次（合并切换视图区和批量移动区）
+  - 选中账户时 hover tile 显示行尾 ⇄ 快捷按钮，点击批量移动到该组
+- **移除**: `AccountFilter.tsx` 中的分组 chip 多选区（避免与 Tab 双重控制冲突）
+- **修复**: 下拉菜单被卡片遮挡 — `<header>` 加 `relative z-20` 抬升 stacking context（`.glass-toolbar` 的 backdrop-filter 创建了独立 z 层，需显式提升）
+
+#### 账号管理工具栏紧凑化
+- **重构**: 6 个工具栏按钮（标签/隐私/筛选/检查/删除/刷新）改为纯图标 + tooltip 模式（`size="icon" h-8 w-8`），节省约 280px 宽度
+- **优化**: 标签按钮选中状态用主色小圆点（6px）替代 `ChevronDown`，更克制
+- **优化**: 删除按钮 hover 变 `bg-destructive/10` 红色警示
+- **优化**: tooltip 动态显示选中数量（如"删除选中的 5 个账号"），disabled 时提示"请先选中"
+- **新增**: 独立"清除选中" X 按钮（仅多选时显示），hover 红色提示
+- **保留**: 分组按钮（含当前 Tab 名）+ 全选按钮（含计数）保留文字（信息价值高）
+
+#### 注册页 Pro 计划自定义选择
+- **新增**: `ProPlanType` 类型 — Pro / Pro+ / Power 三种计划，对应 Kiro 后端 `Q_DEVELOPER_STANDALONE_{PRO|PRO_PLUS|POWER}` qSubscriptionType
+- **新增**: 注册页"自动获取 Pro 订阅链接"开关下方加三选一 chip 按钮（蓝/紫/金业务色），localStorage 持久化
+- **重构**: `fetchProSubscriptionUrl` 使用用户选择的计划类型替代硬编码 PRO
+
+#### 反代功能增强
+- **修复**: 多账号模式下"已过期 token 账号永远不刷新"bug — `accountPool.isAccountAvailable` 仅在**无 refreshToken**时才视为不可用，有 refreshToken 的过期账号让 `proxyServer.getAvailableAccount` 触发 `refreshToken`；刷新失败通过 `markNeedsRefresh` 自动隔离，形成闭环
+- **新增**: `ProxyConfig` 增加 `multiAccountSelectionMode: 'all' | 'groups'` 和 `multiAccountGroupIds: string[]` 字段
+- **新增**: 多账号轮询新增"轮询范围"配置 — 全部账号 / 指定分组（chip 多选含"未分组"特殊选项）
+- **新增**: `syncAccounts` 在多账号 + groups 模式下按选中分组过滤要同步的账号
+- **新增**: 反代页面 UI 加"轮询范围"切换 + 分组 chip（用户分组色 + 计数）+ 实时账号数预览
+- **同步**: preload IPC 类型同步（`multiAccountSelectionMode` / `multiAccountGroupIds` / `accountSelectionStrategy`）
+
+#### 反代页面 UI 紧凑化
+- **重构**: 基础配置 + API Key 合并为 1 行 12 列网格 — 端口(2) + 监听(3) + API Key(7)
+- **重构**: API Key 操作按钮（sk-xxx 格式选择 / 随机生成 / 复制 / 管理）全部 `icon-only h-7 w-7` 移到 Label 行右侧
+- **重构**: 高级配置从 2 列改为 3 列布局，所有 description `<p>` 标签移到 Label 的 `title` tooltip（节省 30-40% 纵向空间）
+- **重构**: Token Buffer 开关 + 数字输入合并为 `col-span-3` 一行（`[启用裁剪 160px][数字输入 flex-1]`）
+- **优化**: 模式开关行从 `flex-wrap` 改为 `grid-cols-3`，3 个开关（额度切换/记录日志/流式日志）共一行
+- **修复**: `sk-xxx` 下拉框 `h-6` 被 Select 内部 `py-2` 撑超导致内容被切 — 用 Tailwind 任意属性选择器 `[&>button]:h-7 [&>button]:py-0 [&>button]:px-2.5` 强制覆盖
+- **优化**: 高级配置标题加 `Settings2` 图标 + `uppercase tracking-wider` 小型化
+
+#### Bug 修复
+- **修复**: `AccountManager.tsx` 文件末尾多余 `}` 闭合括号导致 TypeScript 语法错误
+- **优化**: `AccountFilter.tsx` 清理未使用的 `groups` 解构变量
+
 ### v1.6.8 (2026-5-23)
 
 #### Token 计量精度重构

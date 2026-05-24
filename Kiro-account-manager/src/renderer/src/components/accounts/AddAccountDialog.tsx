@@ -1041,8 +1041,8 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
               {/* 登录中状态 - Builder ID */}
               {isLoggingIn && builderIdLoginData && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                  <div className="p-4 bg-primary/[0.08] rounded-lg text-center border border-primary/15">
+                    <p className="text-sm text-primary mb-2">
                       {isEn ? 'Complete login in browser and enter this code:' : '请在浏览器中完成登录，并输入以下代码：'}
                     </p>
                     <div className="flex items-center justify-center gap-2">
@@ -1055,7 +1055,7 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
                         onClick={handleCopyUserCode}
                         title={isEn ? 'Copy code' : '复制代码'}
                       >
-                        {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                        {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
                       </Button>
                     </div>
                     <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -1087,9 +1087,9 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
               {/* 登录中状态 - Social Auth */}
               {isLoggingIn && !builderIdLoginData && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-500" />
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <div className="p-4 bg-primary/[0.08] rounded-lg text-center border border-primary/15">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                    <p className="text-sm text-primary">
                       {isEn ? 'Complete login in browser...' : '请在浏览器中完成登录...'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -1329,7 +1329,7 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
                               setTimeout(() => setCopied(false), 2000)
                             }}
                           >
-                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                            {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
                           </Button>
                         </div>
                       </div>
@@ -1354,17 +1354,17 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
           {/* SSO Token 导入模式 */}
           {importMode === 'sso' && !verifiedData && (
             <div className="space-y-5">
-              <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
+              <div className="p-4 bg-primary/[0.04] rounded-xl border border-primary/15">
                 <div className="flex items-start gap-3">
-                   <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                   <div className="p-2 bg-primary/10 rounded-lg text-primary">
                       <Info className="w-4 h-4" />
                    </div>
                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1.5">{isEn ? 'How to get Token?' : '如何获取 Token?'}</p>
-                      <ol className="text-xs text-blue-600/90 dark:text-blue-400/90 list-decimal list-inside space-y-1.5">
-                        <li>{isEn ? 'Visit and login:' : '在浏览器中访问并登录:'} <a href="https://view.awsapps.com/start/#/device?user_code=PQCF-FCCN/start/#/device?user_code=PQCF-FCCN" target="_blank" className="underline hover:text-blue-800 font-medium">view.awsapps.com/start/#/device?user_code=PQCF-FCCN</a></li>
+                      <p className="text-sm font-semibold text-primary mb-1.5">{isEn ? 'How to get Token?' : '如何获取 Token?'}</p>
+                      <ol className="text-xs text-primary/90 list-decimal list-inside space-y-1.5">
+                        <li>{isEn ? 'Visit and login:' : '在浏览器中访问并登录:'} <a href="https://view.awsapps.com/start/#/device?user_code=PQCF-FCCN/start/#/device?user_code=PQCF-FCCN" target="_blank" className="underline hover:text-primary/80 font-medium">view.awsapps.com/start/#/device?user_code=PQCF-FCCN</a></li>
                         <li>{isEn ? 'Press F12 → Application → Cookies' : '按 F12 打开开发者工具 → Application → Cookies'}</li>
-                        <li>{isEn ? 'Find and copy' : '找到并复制'} <code className="px-1 py-0.5 bg-blue-100 dark:bg-blue-900/40 rounded font-mono text-[10px]">x-amz-sso_authn</code> {isEn ? 'value' : '的值'}</li>
+                        <li>{isEn ? 'Find and copy' : '找到并复制'} <code className="px-1 py-0.5 bg-primary/15 rounded font-mono text-[10px]">x-amz-sso_authn</code> {isEn ? 'value' : '的值'}</li>
                       </ol>
                    </div>
                 </div>
@@ -1445,12 +1445,12 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
 
               {/* 批量导入结果 */}
               {batchImportResult && (
-                <div className={`p-3 rounded-lg text-sm ${batchImportResult.failed > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'}`}>
-                  <p className={`font-medium ${batchImportResult.failed > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}>
+                <div className={`p-3 rounded-lg text-sm ${batchImportResult.failed > 0 ? 'bg-warning/10 border border-warning/30' : 'bg-success/10 border border-success/30'}`}>
+                  <p className={`font-medium ${batchImportResult.failed > 0 ? 'text-warning' : 'text-success'}`}>
                     {isEn ? `Result: ${batchImportResult.success}/${batchImportResult.total} succeeded` : `导入结果: 成功 ${batchImportResult.success}/${batchImportResult.total}`}
                   </p>
                   {batchImportResult.errors.length > 0 && (
-                    <ul className="mt-2 text-xs text-amber-600 dark:text-amber-400 space-y-0.5 max-h-20 overflow-y-auto">
+                    <ul className="mt-2 text-xs text-warning/90 space-y-0.5 max-h-20 overflow-y-auto">
                       {batchImportResult.errors.map((err, i) => (
                         <li key={i}>{err}</li>
                       ))}
@@ -1688,10 +1688,10 @@ export function AddAccountDialog({ isOpen, onClose }: AddAccountDialogProps): Re
               {/* 批量导入模式 */}
               {oidcImportMode === 'batch' && (
                 <>
-                  <div className="p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
-                    <p className="text-xs text-blue-600 dark:text-blue-400">
-                      {isEn ? 'Supports JSON array or Card Key format. JSON required:' : '支持 JSON 数组或卡密格式。JSON 必填:'} <code className="px-1 bg-blue-100 dark:bg-blue-900/40 rounded">refreshToken</code>.
-                      {isEn ? 'Card Key format:' : '卡密格式：'} <code className="px-1 bg-blue-100 dark:bg-blue-900/40 rounded">{isEn ? 'email----pwd----token----id----secret' : '邮箱----密码----Token----ID----Secret'}</code>
+                  <div className="p-3 bg-primary/[0.04] rounded-xl border border-primary/15">
+                    <p className="text-xs text-primary">
+                      {isEn ? 'Supports JSON array or Card Key format. JSON required:' : '支持 JSON 数组或卡密格式。JSON 必填:'} <code className="px-1 bg-primary/15 rounded">refreshToken</code>.
+                      {isEn ? 'Card Key format:' : '卡密格式：'} <code className="px-1 bg-primary/15 rounded">{isEn ? 'email----pwd----token----id----secret' : '邮箱----密码----Token----ID----Secret'}</code>
                     </p>
                   </div>
 
@@ -1776,12 +1776,12 @@ email----password----refreshToken----clientId----clientSecret`
 
                   {/* 批量导入结果 */}
                   {oidcBatchImportResult && (
-                    <div className={`p-3 rounded-lg text-sm ${oidcBatchImportResult.failed > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'}`}>
-                      <p className={`font-medium ${oidcBatchImportResult.failed > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}>
+                    <div className={`p-3 rounded-lg text-sm ${oidcBatchImportResult.failed > 0 ? 'bg-warning/10 border border-warning/30' : 'bg-success/10 border border-success/30'}`}>
+                      <p className={`font-medium ${oidcBatchImportResult.failed > 0 ? 'text-warning' : 'text-success'}`}>
                         {isEn ? `Result: ${oidcBatchImportResult.success}/${oidcBatchImportResult.total} succeeded` : `导入结果: 成功 ${oidcBatchImportResult.success}/${oidcBatchImportResult.total}`}
                       </p>
                       {oidcBatchImportResult.errors.length > 0 && (
-                        <ul className="mt-2 text-xs text-amber-600 dark:text-amber-400 space-y-0.5 max-h-20 overflow-y-auto">
+                        <ul className="mt-2 text-xs text-warning/90 space-y-0.5 max-h-20 overflow-y-auto">
                           {oidcBatchImportResult.errors.map((err, i) => (
                             <li key={i}>{err}</li>
                           ))}

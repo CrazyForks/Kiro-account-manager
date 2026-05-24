@@ -96,6 +96,9 @@ function saveHistory(items: HistoryItem[]): void {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 100))) } catch { /* ignore */ }
 }
 
+/** 订阅计划类型（对应 Kiro 后端 qSubscriptionType）*/
+export type ProPlanType = 'Q_DEVELOPER_STANDALONE_PRO' | 'Q_DEVELOPER_STANDALONE_PRO_PLUS' | 'Q_DEVELOPER_STANDALONE_POWER'
+
 interface RegisterConfig {
   mode: RegMode
   moBaseURL: string
@@ -108,6 +111,7 @@ interface RegisterConfig {
   batchRetries: number
   batchConcurrency: number
   autoFetchProLink: boolean
+  proPlanType: ProPlanType
   tempMailEmail: string
   tempMailEpin: string
   tempMailDomain: string
@@ -409,6 +413,7 @@ export function RegisterPage(): React.JSX.Element {
   const [batchRetries, setBatchRetries] = useState(saved.batchRetries ?? 1)
   const [batchConcurrency, setBatchConcurrency] = useState(saved.batchConcurrency ?? 1)
   const [autoFetchProLink, setAutoFetchProLink] = useState(saved.autoFetchProLink ?? false)
+  const [proPlanType, setProPlanType] = useState<ProPlanType>(saved.proPlanType ?? 'Q_DEVELOPER_STANDALONE_PRO')
   const [batchItems, _setBatchItems] = useState<BatchItem[]>(_batchItems)
 
   const setBatchRunning = (v: boolean) => { _batchRunning = v; _refSetBatchRunning?.(v) }
@@ -428,8 +433,8 @@ export function RegisterPage(): React.JSX.Element {
 
   // 自动保存配置到 localStorage
   useEffect(() => {
-    saveConfig({ mode, moBaseURL, moAPIKey, outlookData, fullName, batchCount, batchInterval, batchAutoImport, batchRetries, batchConcurrency, autoFetchProLink, tempMailEmail, tempMailEpin, tempMailDomain })
-  }, [mode, moBaseURL, moAPIKey, outlookData, fullName, batchCount, batchInterval, batchAutoImport, batchRetries, batchConcurrency, autoFetchProLink, tempMailEmail, tempMailEpin, tempMailDomain])
+    saveConfig({ mode, moBaseURL, moAPIKey, outlookData, fullName, batchCount, batchInterval, batchAutoImport, batchRetries, batchConcurrency, autoFetchProLink, proPlanType, tempMailEmail, tempMailEpin, tempMailDomain })
+  }, [mode, moBaseURL, moAPIKey, outlookData, fullName, batchCount, batchInterval, batchAutoImport, batchRetries, batchConcurrency, autoFetchProLink, proPlanType, tempMailEmail, tempMailEpin, tempMailDomain])
 
   // ============ 注册历史 ============
 
@@ -520,10 +525,10 @@ export function RegisterPage(): React.JSX.Element {
     const linkId = crypto.randomUUID()
     appendSubscriptionLink({ accountId: linkId, email, status: 'loading' })
     try {
-      addLog(`[Pro Link] ${email}: ${t('register.fetchingProLink')}...`)
+      addLog(`[Pro Link] ${email}: ${t('register.fetchingProLink')} (${proPlanType.replace('Q_DEVELOPER_STANDALONE_', '')})...`)
       const result = await window.api.accountGetSubscriptionUrl(
         accessToken,
-        'Q_DEVELOPER_STANDALONE_PRO',
+        proPlanType,
         regResult.region || 'us-east-1',
         undefined,
         undefined,
@@ -862,18 +867,50 @@ export function RegisterPage(): React.JSX.Element {
             </div>
           </div>
 
-          {/* 自动获取 Pro 订阅链接开关 */}
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={autoFetchProLink}
-              onCheckedChange={setAutoFetchProLink}
-              disabled={isRunning || batchRunning}
-            />
-            <div className="flex items-center gap-2">
-              <Link2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{t('register.autoFetchProLink')}</span>
-              <span className="text-xs text-muted-foreground">— {t('register.autoFetchProLinkDesc')}</span>
+          {/* 自动获取 Pro 订阅链接开关 + 计划选择 */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={autoFetchProLink}
+                onCheckedChange={setAutoFetchProLink}
+                disabled={isRunning || batchRunning}
+              />
+              <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">{t('register.autoFetchProLink')}</span>
+                <span className="text-xs text-muted-foreground">— {t('register.autoFetchProLinkDesc')}</span>
+              </div>
             </div>
+
+            {/* 计划类型选择（仅开关开启时显示）*/}
+            {autoFetchProLink && (
+              <div className="ml-11 flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{isEn ? 'Plan:' : '计划:'}</span>
+                {([
+                  { value: 'Q_DEVELOPER_STANDALONE_PRO' as ProPlanType, label: 'Pro', color: 'bg-blue-500' },
+                  { value: 'Q_DEVELOPER_STANDALONE_PRO_PLUS' as ProPlanType, label: 'Pro+', color: 'bg-purple-500' },
+                  { value: 'Q_DEVELOPER_STANDALONE_POWER' as ProPlanType, label: 'Power', color: 'bg-amber-500' }
+                ]).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setProPlanType(opt.value)}
+                    disabled={isRunning || batchRunning}
+                    className={`px-3 h-7 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 border ${
+                      proPlanType === opt.value
+                        ? `${opt.color} text-white border-transparent shadow-sm`
+                        : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-primary/40'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {proPlanType === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {opt.label}
+                  </button>
+                ))}
+                <span className="text-[10px] text-muted-foreground ml-1 italic">
+                  {isEn ? '(Plan ID will be sent to Kiro API)' : '(计划 ID 会作为订阅类型发送)'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* MoEmail 配置 */}

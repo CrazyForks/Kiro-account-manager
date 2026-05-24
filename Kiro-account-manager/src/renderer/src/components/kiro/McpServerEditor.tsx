@@ -105,7 +105,7 @@ export function McpServerEditor({ serverName, server, onClose, onSaved }: McpSer
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div 
-        className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl"
+        className="absolute inset-0 bg-black/50"
         onClick={onClose}
       />
       

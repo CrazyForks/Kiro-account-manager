@@ -95,7 +95,7 @@ export function ApiKeyUsageDialog({ open, onOpenChange, apiKey }: ApiKeyUsageDia
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-slate-900/[0.12] dark:bg-black/50 backdrop-blur-xl" onClick={() => onOpenChange(false)} />
+      <div className="absolute inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
       <Card className="relative w-[900px] max-h-[85vh] shadow-2xl border-0 overflow-hidden animate-in fade-in zoom-in-95 duration-200 glass-card-strong">
         <CardHeader className="pb-3 border-b sticky top-0 z-10">
           <div className="flex items-center justify-between">
@@ -114,17 +114,17 @@ export function ApiKeyUsageDialog({ open, onOpenChange, apiKey }: ApiKeyUsageDia
               <div className="text-xs text-muted-foreground mb-1">{isEn ? 'Total Requests' : '总请求数'}</div>
               <div className="text-xl font-bold text-primary">{apiKey.usage.totalRequests.toLocaleString()}</div>
             </div>
-            <div className="bg-green-500/10 rounded-lg p-3">
+            <div className="bg-success/10 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">{isEn ? 'Total Credits' : '总 Credits'}</div>
-              <div className="text-xl font-bold text-green-600">{apiKey.usage.totalCredits.toFixed(4)}</div>
+              <div className="text-xl font-bold text-success">{apiKey.usage.totalCredits.toFixed(4)}</div>
             </div>
-            <div className="bg-blue-500/10 rounded-lg p-3">
+            <div className="bg-primary/10 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">{isEn ? 'Input Tokens' : '输入 Tokens'}</div>
-              <div className="text-xl font-bold text-blue-600">{apiKey.usage.totalInputTokens.toLocaleString()}</div>
+              <div className="text-xl font-bold text-primary">{apiKey.usage.totalInputTokens.toLocaleString()}</div>
             </div>
-            <div className="bg-purple-500/10 rounded-lg p-3">
+            <div className="bg-[var(--gradient-to)]/10 rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">{isEn ? 'Output Tokens' : '输出 Tokens'}</div>
-              <div className="text-xl font-bold text-purple-600">{apiKey.usage.totalOutputTokens.toLocaleString()}</div>
+              <div className="text-xl font-bold text-[var(--gradient-to)]">{apiKey.usage.totalOutputTokens.toLocaleString()}</div>
             </div>
           </div>
 
